@@ -19,8 +19,13 @@ def zip_content(file_name, content):
     return zipped_file
 
 
-def connect_to_db(env='staging'):
-    if env == "staging":
+def connect_to_db(env='local'):
+    if env == "local":
+        endpoint = 'localhost'
+        username = 'mani'
+        password = 'mani1234@'
+        database_name = 'mysql'
+    elif env == "staging":
         endpoint = 'cheetay-clone.cwyg8vc3e60v.eu-central-1.rds.amazonaws.com'
         username = 'root'
         password = 'arbisoft313'
