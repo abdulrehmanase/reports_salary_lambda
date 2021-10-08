@@ -4,7 +4,7 @@ from utils import *
 def get_data(start_date, end_date):
     sql_query = ("""select rider.id  from rider INNER JOIN city c on rider.city_id = c.id where 
                     (rider.city_id is not NULL AND rider.id IN (SELECT rs.rider_id from rider_shift rs 
-                    inner join shift s on rs.shift_id = s.id where s.start_at  BETWEEN  '{}' AND '{}' ) )  limit 10 """.format(start_date,end_date))
+                    inner join shift s on rs.shift_id = s.id where s.start_at  BETWEEN  '{}' AND '{}' ) )   """.format(start_date,end_date))
     return sql_query
 
 
@@ -98,3 +98,30 @@ def get_rider_earnings_by_category(rider, start_time, end_time):
     cursor.execute(get_rider_earnings_by_category_sql)
     rider_earning_by_category = cursor.fetchall()
     return rider_earning_by_category
+
+
+def get_rider_penalty(rider, start_time, end_time):
+    get_rider_penalty_sql = ("""select SUM(rp.amount ) , COUNT(id) as total_penalty  
+                                from rider_penalty rp WHERE rp.created_date BETWEEN  '{}' AND 
+                                '{}' AND 
+                                rp.rider_id ='{}'  """ .format(start_time, end_time, rider))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_penalty_sql)
+    get_penalty = cursor.fetchall()
+    return {
+        'total_penalty': get_penalty[0][0] or 0,
+        'no_show_days': get_penalty[0][1] or 0,
+    }
+
+
+def get_rider_bouns(rider, start_time, end_time):
+    get_rider_bouns_sql = ("""select SUM(bonus_amount) as total_bonus from rider_referral_bonus_log rrbl WHERE 
+                                rrbl .created_at BETWEEN  '{}' AND 
+                                '{}' AND 
+                                rrbl.referred_by_id ='{}' """.format(start_time, end_time, rider))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_bouns_sql)
+    get_bouns = cursor.fetchall()
+    return get_bouns[0][0] or 0

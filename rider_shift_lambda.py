@@ -79,8 +79,8 @@ def rider_salary(start_date, end_date):
         delivery_charges_based_pay = rider_earning[0][4] or 0
         per_order_pay = rider_earning[0][5] or 0
         slab_based_pay = rider_earning[0][6] or 0
-        tip_pay = rider_earning[0][7] or 0
-        total_late_night_bonus_pay = rider_earning[0][12] or 0
+        tips = rider_earning[0][7] or 0
+        late_night_bonus = rider_earning[0][12] or 0
 
         rider_earning_category=get_rider_earnings_by_category(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
@@ -95,6 +95,19 @@ def rider_salary(start_date, end_date):
         pharma_order_pay = rider_earning_category[0][7] or 0
         tiffin_order_pay = rider_earning_category[0][8] or 0
         xoom_order_pay = rider_earning_category[0][9] or 0
+        get_penalty = get_rider_penalty(rider=rider[0], start_time=start_date,
+                                                                   end_time=end_date)
+
+        total_penalty, no_show_days = float(get_penalty['total_penalty']) , get_penalty['no_show_days']
+
+        get_bouns = get_rider_bouns(rider=rider[0], start_time=start_date,
+                                                                   end_time=end_date)
+
+        total_pay = max(pick_up_distance_bonus + pick_up_pay + drop_off_distance_pay + drop_off_pay +
+                        delivery_charges_based_pay + per_order_pay + slab_based_pay + tips + late_night_bonus - total_penalty, 0)
+
+
+
 
 
 rider_salary("2021-05-09 23:59:00", "2021-10-07 07:18:18.754045 ")
