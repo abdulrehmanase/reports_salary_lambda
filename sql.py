@@ -125,3 +125,39 @@ def get_rider_bouns(rider, start_time, end_time):
     cursor.execute(get_rider_bouns_sql)
     get_bouns = cursor.fetchall()
     return get_bouns[0][0] or 0
+
+
+def get_earnings_stats(rider, start_time, end_time, calculate_total_pay=True):
+    get_earnings_stats_sql = ("""select SUM(total_time) as total_time ,
+                                SUM(total_pause_time) as total_pause_time,
+                                SUM(total_problem_time)  as total_problem_time,
+                                SUM(total_shift_hours)  as total_shift_hours,
+                                SUM(total_over_time)  as total_over_time,
+                                SUM(over_time_pay)  as over_time_pay ,
+                                SUM(pay)  as total_pay
+                                from rider_earnings_stats res inner join rider_shift rs on  res.rider_shift_id = rs.id 
+                                where    rs.rider_id = '{}' AND rs.started_at BETWEEN '{}'
+                                AND '{}'
+
+                                """ .format(rider, start_time, end_time))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_earnings_stats_sql)
+    get_stats = cursor.fetchall()
+
+    total_pause_time = get_stats[0][1] or 0
+    total_worked_time = get_stats[0][0] or 0
+    total_problem_time = get_stats[0][2] or 0
+    total_shift_hours = get_stats[0][3]
+    total_active_hours = total_worked_time - total_pause_time - total_problem_time
+    hours = round(total_active_hours, 2)
+    hours_percent = round(total_active_hours * 100 / total_shift_hours, 1) if total_shift_hours else 0
+    hours_percent = hours_percent if hours_percent <= 100 else 100  # added to round off to 100
+
+    response = {'hours': hours, 'hours_percent': hours_percent}
+    if calculate_total_pay:
+        response['total_pay'] = get_stats[0][6] or 0
+        response['over_time_pay'] = get_stats[0][5] or 0
+        response['total_over_time'] = get_stats[0][4] or 0
+
+    return response
