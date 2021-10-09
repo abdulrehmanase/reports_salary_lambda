@@ -161,3 +161,30 @@ def get_earnings_stats(rider, start_time, end_time, calculate_total_pay=True):
         response['total_over_time'] = get_stats[0][4] or 0
 
     return response
+
+
+def get_rider_order_stats():
+    get_rider_order_stats_sql = (""" select COUNT(os.id) as total_orders,
+                                COUNT(  os.picked_up_at )  as total_picked_up_orders,
+                                COUNT(  os.delivered_at )  as delivered_orders
+                                from order_state os 
+                                inner join `order` o on os.order_id = o.id 
+                                WHERE (os.assigned_at BETWEEN "2021-05-09 23:59:00" AND "2021-10-09 17:26:42.239679"
+                                AND o.status in ("Delivered", "Cancelled", "Failed", "Invalid") AND os.rider_id="25680" )"""
+                                 )
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_order_stats_sql)
+    get_rider_stats = cursor.fetchall()
+    total_orders = get_rider_stats[0][0] or 0
+    total_picked_up_orders = get_rider_stats[0][1] or 0
+    delivered_orders = get_rider_stats[0][1] or 0
+    total_failed_orders = total_picked_up_orders - delivered_orders
+    return {
+        'total_orders': total_orders,
+        'total_picked_up_orders': total_picked_up_orders,
+        'total_delivered_orders': delivered_orders,
+        'total_failed_orders': total_failed_orders,
+        'failed_rate': (round(total_failed_orders * 100 / total_picked_up_orders, 1)
+                        if total_picked_up_orders else 0),
+    }

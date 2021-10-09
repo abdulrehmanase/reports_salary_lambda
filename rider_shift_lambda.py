@@ -106,9 +106,10 @@ def rider_salary(start_date, end_date):
         # total_pay = max(pick_up_distance_bonus + pick_up_pay + drop_off_distance_pay + drop_off_pay +
         #                 delivery_charges_based_pay + per_order_pay + slab_based_pay + tips + late_night_bonus - total_penalty, 0)
 
-        get_earning = get_earnings_stats(rider=rider[0], start_time=start_date,
+        shifts_stats = get_earnings_stats(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
-        print(get_earning)
+        order_stats=get_rider_order_stats()
+        print(order_stats)
 
 
 rider_salary("2021-05-09 23:59:00", "2021-10-07 07:18:18.754045 ")
