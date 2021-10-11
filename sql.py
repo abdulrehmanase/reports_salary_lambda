@@ -259,3 +259,21 @@ def get_rider_order_accept_stats(rider, start_time, end_time):
         'total_rejected_orders': rejected_orders,
         'acceptance_rate': round(accepted_orders * 100 / total_orders, 1) if total_orders else 0,
     }
+
+
+def get_rider_on_time_delivery_stats(rider, start_time, end_time):
+    get_rider_on_time_delivery_stats_sql = ("""select COUNT(o.id)  from order_state os inner join `order` o ON os.order_id = o.id 
+                                            inner join algo_order_times aot on o.id =aot.order_id 
+                                            WHERE (os.arrived_for_delivery_at <= (CASE WHEN aot.delivery_time_after_pickup IS NOT NULL THEN 
+                                            aot.delivery_time_after_pickup 
+                                            WHEN aot.delivery_time_after_pickup IS NULL THEN aot.delivery_time ELSE NULL END) AND 
+                                            os.assigned_at BETWEEN '{}' AND '{}' AND os.delivered_at IS NOT NULL AND o.status = "Delivered" AND 
+                                            os.rider_id = '{}')""".format(start_time, end_time, rider))
+
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_on_time_delivery_stats_sql)
+    get_rider_on_time = cursor.fetchall()
+    return {
+        'total_on_time_deliveries': get_rider_on_time
+    }

@@ -153,6 +153,9 @@ def rider_salary(start_date, end_date):
                                                                    end_time=end_date)
             acceptance_rate = get_rider_order['acceptance_rate']
             total_unaccepted_orders = get_rider_order['total_rejected_orders']
+            get_rider_on_time=get_rider_on_time_delivery_stats(rider=rider[0], start_time=start_date,
+                                                                   end_time=end_date)
+            print(get_rider_on_time)
 
 
 
