@@ -78,6 +78,7 @@ def get_rider_earnings(rider, start_time, end_time):
 def get_rider_earnings_by_category(rider, start_time, end_time):
     get_rider_earnings_by_category_sql=("""select 
                                     SUM(CASE when o.category="food" then amount  END) as food,
+                                    
                                     SUM(CASE when o.category="healthcare" then amount  END) as healthcare,
                                     SUM(CASE when o.category="errand" then amount END) as errand,
                                     SUM(CASE when o.category="books" then amount  END) as books,
@@ -163,15 +164,15 @@ def get_earnings_stats(rider, start_time, end_time, calculate_total_pay=True):
     return response
 
 
-def get_rider_order_stats():
+def get_rider_order_stats(rider, start_time, end_time):
     get_rider_order_stats_sql = (""" select COUNT(os.id) as total_orders,
                                 COUNT(  os.picked_up_at )  as total_picked_up_orders,
                                 COUNT(  os.delivered_at )  as delivered_orders
                                 from order_state os 
                                 inner join `order` o on os.order_id = o.id 
-                                WHERE (os.assigned_at BETWEEN "2021-05-09 23:59:00" AND "2021-10-09 17:26:42.239679"
-                                AND o.status in ("Delivered", "Cancelled", "Failed", "Invalid") AND os.rider_id="25680" )"""
-                                 )
+                                WHERE (os.assigned_at BETWEEN '{}' AND '{}'
+                                AND o.status in ("Delivered", "Cancelled", "Failed", "Invalid") AND os.rider_id='{}' )"""
+                                 .format(start_time, end_time, rider))
     connection = connect_to_db()
     cursor = connection.cursor()
     cursor.execute(get_rider_order_stats_sql)
@@ -187,4 +188,74 @@ def get_rider_order_stats():
         'total_failed_orders': total_failed_orders,
         'failed_rate': (round(total_failed_orders * 100 / total_picked_up_orders, 1)
                         if total_picked_up_orders else 0),
+    }
+
+
+def instance():
+    instance_sql = ("""SELECT hourly_pay_min_app_on_time from city_configuration cc inner join rider r on
+                        r.city_id = cc.id """)
+
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(instance_sql)
+    rider_instance = cursor.fetchall()
+    return rider_instance
+
+
+def can_get_minimum_guarantee(rider, start_time, end_time, total_pay):
+
+    shifts_stats = get_earnings_stats(rider, start_time, end_time)
+    rider_instance = instance()
+    order_stats = get_rider_order_stats(rider, start_time, end_time)
+    stats = {'shifts_stats': shifts_stats, 'order_stats': order_stats}
+
+    return (total_pay < shifts_stats['total_pay'] and shifts_stats['hours_percent'] >=
+         rider_instance[0][0]), stats
+
+
+def get_rider_order_dates_stats(rider,week):
+    get_rider_order_dates_stats_sql = ("""SELECT COUNT(id) as total_orders,
+                                        Count(Case when os.picked_up_at is not null then os.id end) as total_picked_up_orders,
+                                        Count(Case when os.delivered_at is not null then os.id end) as delivered_orders
+                                        from order_state os where (DATE(CONVERT_TZ ( os.assigned_at ,UTC_DATE  , UTC_DATE )) IN {} AND os.rider_id = '{}')
+                                        
+                                        
+                                        """.format(week, rider))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_order_dates_stats_sql)
+    get_rider_order = cursor.fetchall()
+    total_orders = get_rider_order[0][0] or 0
+    total_picked_up_orders = get_rider_order[0][1] or 0
+    delivered_orders = get_rider_order[0][2] or 0
+    total_failed_orders = total_picked_up_orders - delivered_orders
+    return {
+        'total_orders': total_orders,
+        'total_picked_up_orders': total_picked_up_orders,
+        'total_delivered_orders': delivered_orders,
+        'total_failed_orders': total_failed_orders,
+        'failed_rate': (round(total_failed_orders * 100 / total_picked_up_orders, 1)
+                        if total_picked_up_orders else 0),
+    }
+
+
+def get_rider_order_accept_stats(rider, start_time, end_time):
+    get_rider_order_accept_stats_sql = ("""select COUNT(rarl.id) as total_orders,
+                                    COUNT(CASE when rarl.log_type="A" then rarl.id end) as accepted_orders,
+                                    COUNT(CASE when rarl.log_type="R" then rarl.id end) as rejected_orders
+                                    FROM rider_accept_reject_log rarl where rarl.created_at BETWEEN 
+                                    '{}' AND '{}' AND rarl .rider_id ='{}' 
+                                    """.format(start_time, end_time, rider))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_order_accept_stats_sql)
+    get_rider_order_accept = cursor.fetchall()
+    total_orders = get_rider_order_accept[0][0] or 0
+    accepted_orders = get_rider_order_accept[0][1] or 0
+    rejected_orders = get_rider_order_accept[0][2] or 0
+    return {
+        'total_orders': total_orders,
+        'total_accepted_orders': accepted_orders,
+        'total_rejected_orders': rejected_orders,
+        'acceptance_rate': round(accepted_orders * 100 / total_orders, 1) if total_orders else 0,
     }
