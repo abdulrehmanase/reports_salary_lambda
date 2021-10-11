@@ -275,5 +275,41 @@ def get_rider_on_time_delivery_stats(rider, start_time, end_time):
     cursor.execute(get_rider_on_time_delivery_stats_sql)
     get_rider_on_time = cursor.fetchall()
     return {
-        'total_on_time_deliveries': get_rider_on_time
+        'total_on_time_deliveries': get_rider_on_time[0][0]
     }
+
+
+def get_rider_on_time_pickup_stats(rider, start_time, end_time):
+    get_rider_on_time_pickup_stats_sql = ("""select COUNT(o.id)  from order_state os inner join `order` o ON os.order_id = o.id 
+                                            inner join algo_order_times aot on o.id =aot.order_id 
+                                            WHERE  (os.arrived_at <= (aot.rider_arrival_time) AND 
+                                            os.assigned_at BETWEEN '{}' AND '{}' AND o.status IN 
+                                            ("Delivered", "Cancelled", "Failed", "Invalid") AND os.picked_up_at IS NOT NULL AND os.rider_id = '{}')
+                                            """.format(start_time, end_time, rider))
+
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(get_rider_on_time_pickup_stats_sql)
+    get_rider_on_time_pickup = cursor.fetchall()
+    return {
+        'total_on_time_pickups': get_rider_on_time_pickup[0][0]
+    }
+
+
+def get_on_time_rate(on_time_deliveries, on_time_pickups, total_delivered_orders, total_picked_up_orders):
+
+
+    return int(round((on_time_deliveries + on_time_pickups) * 100 /
+                     ((total_delivered_orders + total_picked_up_orders) or 1), 0))
+
+
+def calculate_on_time_rates(rider, start_time, end_time,total_delivered_orders, total_picked_up_orders):
+    on_time_delivery_stats = get_rider_on_time_delivery_stats(rider, start_time, end_time)
+    total_on_time_deliveries = on_time_delivery_stats['total_on_time_deliveries']
+    on_time_pickup_stats = get_rider_on_time_pickup_stats(rider, start_time, end_time)
+    total_on_time_pickups = on_time_pickup_stats['total_on_time_pickups']
+
+    return {"drop_off_rate": round(total_on_time_deliveries * 100 / (total_delivered_orders or 1)),
+            "pickup_rate": round(total_on_time_pickups * 100 / (total_picked_up_orders or 1)),
+            "on_time_rate": get_on_time_rate(total_on_time_deliveries, total_on_time_pickups, total_delivered_orders,
+                                             total_picked_up_orders)}

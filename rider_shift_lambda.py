@@ -118,6 +118,7 @@ def rider_salary(start_date, end_date):
 
         total_penalty, no_show_days = float(get_penalty['total_penalty']) , get_penalty['no_show_days']
 
+
         get_bouns = get_rider_bouns(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
 
@@ -132,6 +133,7 @@ def rider_salary(start_date, end_date):
         hours = shifts_stats['hours']
         app_on_rate = shifts_stats['hours_percent']
         guaranteed_pay = shifts_stats['total_pay']
+        print('guaranteed_pay',type(guaranteed_pay))
         over_time_pay = shifts_stats['over_time_pay'] or 0
         total_picked_up_orders = orders_per_hour = acceptance_rate = per_hour_income = guaranteed_pay_per_hour = \
             total_failed_orders = failed_rate = guarantee_rate = weekend_orders = on_time_rate = \
@@ -149,13 +151,27 @@ def rider_salary(start_date, end_date):
             guaranteed_pay_per_hour = round(guaranteed_pay / hours, 2)
             weekend_orders_stats=get_rider_order_dates_stats(rider_id,weekendss)
             weekend_orders = weekend_orders_stats['total_picked_up_orders']
-            get_rider_order=get_rider_order_accept_stats(rider=rider[0], start_time=start_date,
+            order_accept_stats=get_rider_order_accept_stats(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
-            acceptance_rate = get_rider_order['acceptance_rate']
-            total_unaccepted_orders = get_rider_order['total_rejected_orders']
-            get_rider_on_time=get_rider_on_time_delivery_stats(rider=rider[0], start_time=start_date,
+            acceptance_rate = order_accept_stats['acceptance_rate']
+            total_unaccepted_orders = order_accept_stats['total_rejected_orders']
+            total_on_time_deliveries=get_rider_on_time_delivery_stats(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
-            print(get_rider_on_time)
+            total_on_time_deliveriess = total_on_time_deliveries['total_on_time_deliveries']
+            total_on_time_pickups = get_rider_on_time_pickup_stats(rider=rider[0], start_time=start_date,
+                                                                   end_time=end_date)
+            total_on_time_pickupss = total_on_time_pickups['total_on_time_pickups']
+            if can_get_minimum_guarantee:
+                guarantee_qualifies = 'Yes'
+                guarantee_rate = guaranteed_pay_per_hour
+
+                total_pay_with_guarantee = float(guaranteed_pay) - total_penalty
+            on_time_rate = calculate_on_time_rates(rider_id, start_date,
+                                                                   end_date, total_delivered_orders,  total_picked_up_orders)
+            on_time_rates = on_time_rate['on_time_rate']
+
+
+
 
 
 
