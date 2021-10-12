@@ -61,6 +61,12 @@ REFERRAL_BONUS = 'Referral Bonus'
 CERTIFICATE_BONUS = 'Certificate Bonus'
 SECURITY_DEPOSITS_DEDUCTION = "Security Deposits Deduction"
 RIDER_WALLET = "Rider Wallet"
+JOB_MODEL_FIXED = 2
+JOB_TYPE_FULL_TIME = 1
+PER_ORDER_PAY = 'FP'
+DELIVERY_CHARGES_BASED_PAY_PAY =  'DCP'
+SLAB_BASED_PAY = 'SBP'
+LATE_NIGHT_BONUS = 'LNB'
 
 
 def rider_salary(start_date, end_date):
@@ -75,7 +81,7 @@ def rider_salary(start_date, end_date):
             weekends.append(str(date))
     weekendss = tuple(weekends)
 
-
+    riders_data = []
     connection = connect_to_db()
     cursor = connection.cursor()
     cursor.execute(get_data(start_date, end_date))
@@ -84,9 +90,9 @@ def rider_salary(start_date, end_date):
 
     for rider in riders:
         rider_id = rider[0]
-        pick_up_distance = get_rider_pickup_distances(rider=rider[0], start_time=start_date,
+        pickup_distance = get_rider_pickup_distances(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date, log_type="PB")
-        drop_off_distance = get_rider_drop_off_distances(rider=rider[0], start_time=start_date,
+        delivered_distance = get_rider_drop_off_distances(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date, log_type="DDP")
         rider_earning = get_rider_earnings(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
@@ -119,7 +125,7 @@ def rider_salary(start_date, end_date):
         total_penalty, no_show_days = float(get_penalty['total_penalty']) , get_penalty['no_show_days']
 
 
-        get_bouns = get_rider_bouns(rider=rider[0], start_time=start_date,
+        referral_bonus = get_rider_bouns(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
 
         total_pay = max(pick_up_distance_bonus + pick_up_pay + drop_off_distance_pay + drop_off_pay +
@@ -169,6 +175,125 @@ def rider_salary(start_date, end_date):
             on_time_rate = calculate_on_time_rates(rider_id, start_date,
                                                                    end_date, total_delivered_orders,  total_picked_up_orders)
             on_time_rates = on_time_rate['on_time_rate']
+            certificate_bonus = 0
+            loyalty_bonus = loyalty_bonus_query(rider_id, start_date,
+                                                                   end_date)
+            print('loyal' , type(loyalty_bonus))
+            print('refferal', type(referral_bonus))
+            print('certi', type(certificate_bonus))
+            print('tota0', type(total_pay_with_guarantee))
+            print('over', type(over_time_pay))
+            final_payout = max((total_pay_with_guarantee + float(over_time_pay)),
+                               0) + loyalty_bonus + referral_bonus + certificate_bonus
+            certificate_bonus = 0
+            final_payout, security_deposit_deduction =0,0
+            fuel_allowance = pick_up_distance_bonus + drop_off_distance_pay
+            final_payout -= fuel_allowance
+
+            # rider job type
+            rider_type = "Freelance"
+            if rider.job_model == JOB_MODEL_FIXED:
+                if rider.job_type == JOB_TYPE_FULL_TIME:
+                    rider_type = "Full-Time"
+                else:
+                    rider_type = "Part-Time"
+            riders_data.append({
+                NIC: rider.nic, CITY: rider.city.name, RIDER_CATEGORY: rider.get_category_display(),
+                RIDER_TYPE: rider_type,
+                TOTAL_PICKED_UP_ORDERS: total_picked_up_orders,
+                WEEKEND_ORDERS: weekend_orders, HOURS_WORKED: hours, UTR: orders_per_hour, PICKUP_PAY: pick_up_pay,
+                DROP_OFF_DISTANCE_PAY: drop_off_distance_pay, DROP_OFF_DISTANCE: delivered_distance,
+                PICKUP_BONUS: pick_up_distance_bonus, PICKUP_DISTANCE: pickup_distance,
+                DROP_OFF_PAY: drop_off_pay, DELIVERY_CHARGES_BASED_PAY_PAY: delivery_charges_based_pay,
+                PER_ORDER_PAY: per_order_pay, SLAB_BASED_PAY: slab_based_pay, LATE_NIGHT_BONUS: late_night_bonus,
+                NO_SHOW_DAYS: no_show_days, PENALTY: total_penalty, TOTAL_WITHOUT_GUARANTEE: total_pay,
+                PER_HOUR_INCOME: per_hour_income,
+                GUARANTEED_PAY_PER_HOUR: guaranteed_pay_per_hour, ACCEPTANCE_RATE: acceptance_rate,
+                ON_TIME_RATE: on_time_rate, TOTAL_ON_TIME_PICK_UPS: total_on_time_pickupss,
+                TOTAL_ON_TIME_DELIVERIES: total_on_time_deliveriess, FAILED_ORDERS: total_failed_orders,
+                UNACCEPTED_ORDERS: total_unaccepted_orders, FAILED_RATE: failed_rate,
+                APP_ON_RATE: app_on_rate, GUARANTEE_QUALIFIES: guarantee_qualifies, GUARANTEE_RATE: guarantee_rate,
+                FOOD_ORDER_PAY: food_order_pay, HEALTH_CARE_ORDER_PAY: healthcare_order_pay,
+                ERRAND_ORDER_PAY: errand_pay,
+                BOOKS_ORDER_PAY: books_order_pay, BEAUTY_ORDER_PAY: beauty_order_pay,
+                BABY_CARE_ORDER_PAY: babycare_order_pay,
+                PANTRY_ORDER_PAY: pantry_order_pay, PHARMA_ORDER_PAY: pharma_order_pay,
+                TIFFIN_ORDER_PAY: pharma_order_pay,
+                TIFFIN_ORDER_PAY: tiffin_order_pay, XOOM_ORDER_PAY: xoom_order_pay,
+                TOTAL_PAY_WITH_GUARANTEE: total_pay_with_guarantee, SIGN_UP_BONUS: '-', LAST_SALARY_DIFFERENCE: '-',
+                LOYALTY_BONUS_REDEEMED: loyalty_bonus, REFERRAL_BONUS: referral_bonus,
+                CERTIFICATE_BONUS: certificate_bonus,
+                SECURITY_DEPOSITS_DEDUCTION: security_deposit_deduction, FUEL_ALLOWANCE: fuel_allowance,
+                OVER_TIME_PAY: over_time_pay, RIDER_WALLET: rider.cash_in_hand_without_fuel_amount,
+                FINAL_PAYOUT: final_payout})
+    cumulative_stats = {
+        NIC: len(riders_data), CITY: '', RIDER_CATEGORY: '', RIDER_TYPE: '',
+        TOTAL_PICKED_UP_ORDERS: sum(rider_data[TOTAL_PICKED_UP_ORDERS] for rider_data in riders_data),
+        WEEKEND_ORDERS: sum(rider_data[WEEKEND_ORDERS] for rider_data in riders_data),
+        HOURS_WORKED: sum(rider_data[HOURS_WORKED] for rider_data in riders_data),
+        PICKUP_PAY: sum(rider_data[PICKUP_PAY] for rider_data in riders_data),
+        DROP_OFF_DISTANCE_PAY: sum(rider_data[DROP_OFF_DISTANCE_PAY] for rider_data in riders_data),
+        DROP_OFF_DISTANCE: sum(rider_data[DROP_OFF_DISTANCE] for rider_data in riders_data),
+        PICKUP_BONUS: sum(rider_data[PICKUP_BONUS] for rider_data in riders_data),
+        PICKUP_DISTANCE: sum(rider_data[PICKUP_DISTANCE] for rider_data in riders_data),
+        DROP_OFF_PAY: sum(rider_data[DROP_OFF_PAY] for rider_data in riders_data),
+        DELIVERY_CHARGES_BASED_PAY_PAY: sum(rider_data[DELIVERY_CHARGES_BASED_PAY_PAY] for rider_data in riders_data),
+        PER_ORDER_PAY: sum(rider_data[PER_ORDER_PAY] for rider_data in riders_data),
+        SLAB_BASED_PAY: sum(rider_data[SLAB_BASED_PAY] for rider_data in riders_data),
+        LATE_NIGHT_BONUS: sum(rider_data[LATE_NIGHT_BONUS] for rider_data in riders_data),
+        NO_SHOW_DAYS: sum(rider_data[NO_SHOW_DAYS] for rider_data in riders_data),
+        PENALTY: sum(rider_data[PENALTY] for rider_data in riders_data),
+        TOTAL_WITHOUT_GUARANTEE: sum(rider_data[TOTAL_WITHOUT_GUARANTEE] for rider_data in riders_data),
+        PER_HOUR_INCOME: sum(rider_data[PER_HOUR_INCOME] for rider_data in riders_data),
+        GUARANTEED_PAY_PER_HOUR: sum(rider_data[GUARANTEED_PAY_PER_HOUR] for rider_data in riders_data),
+        ACCEPTANCE_RATE: sum(rider_data[ACCEPTANCE_RATE] for rider_data in riders_data),
+        ON_TIME_RATE: sum(rider_data[ON_TIME_RATE] for rider_data in riders_data),
+        TOTAL_ON_TIME_PICK_UPS: sum(rider_data[TOTAL_ON_TIME_PICK_UPS] for rider_data in riders_data),
+        TOTAL_ON_TIME_DELIVERIES: sum(rider_data[TOTAL_ON_TIME_DELIVERIES] for rider_data in riders_data),
+        FAILED_ORDERS: sum(rider_data[FAILED_ORDERS] for rider_data in riders_data),
+        UNACCEPTED_ORDERS: sum(rider_data[UNACCEPTED_ORDERS] for rider_data in riders_data),
+        FAILED_RATE: sum(rider_data[FAILED_RATE] for rider_data in riders_data), GUARANTEE_QUALIFIES: '-',
+        GUARANTEE_RATE: sum(rider_data[GUARANTEE_RATE] for rider_data in riders_data),
+        FOOD_ORDER_PAY: sum(rider_data[FOOD_ORDER_PAY] for rider_data in riders_data),
+        HEALTH_CARE_ORDER_PAY: sum(rider_data[HEALTH_CARE_ORDER_PAY] for rider_data in riders_data),
+        ERRAND_ORDER_PAY: sum(rider_data[ERRAND_ORDER_PAY] for rider_data in riders_data),
+        BOOKS_ORDER_PAY: sum(rider_data[BOOKS_ORDER_PAY] for rider_data in riders_data),
+        BEAUTY_ORDER_PAY: sum(rider_data[BEAUTY_ORDER_PAY] for rider_data in riders_data),
+        BABY_CARE_ORDER_PAY: sum(rider_data[BABY_CARE_ORDER_PAY] for rider_data in riders_data),
+        PANTRY_ORDER_PAY: sum(rider_data[PANTRY_ORDER_PAY] for rider_data in riders_data),
+        PHARMA_ORDER_PAY: sum(rider_data[PHARMA_ORDER_PAY] for rider_data in riders_data),
+        TIFFIN_ORDER_PAY: sum(rider_data[TIFFIN_ORDER_PAY] for rider_data in riders_data),
+        XOOM_ORDER_PAY: sum(rider_data[XOOM_ORDER_PAY] for rider_data in riders_data),
+        TOTAL_PAY_WITH_GUARANTEE: sum(rider_data[TOTAL_PAY_WITH_GUARANTEE] for rider_data in riders_data),
+        SIGN_UP_BONUS: '-', LAST_SALARY_DIFFERENCE: '-',
+        LOYALTY_BONUS_REDEEMED: sum(rider_data[LOYALTY_BONUS_REDEEMED] for rider_data in riders_data),
+        REFERRAL_BONUS: sum(rider_data[REFERRAL_BONUS] for rider_data in riders_data),
+        CERTIFICATE_BONUS: sum(rider_data[CERTIFICATE_BONUS] for rider_data in riders_data),
+        SECURITY_DEPOSITS_DEDUCTION: sum(rider_data[SECURITY_DEPOSITS_DEDUCTION] for rider_data in riders_data),
+        FUEL_ALLOWANCE: sum(rider_data[FUEL_ALLOWANCE] for rider_data in riders_data),
+        OVER_TIME_PAY: sum(rider_data[OVER_TIME_PAY] for rider_data in riders_data),
+        RIDER_WALLET: '',
+        FINAL_PAYOUT: sum(rider_data[FINAL_PAYOUT] for rider_data in riders_data),
+    }
+    cumulative_stats[UTR] = round(sum(rider_data[UTR] for rider_data in riders_data) / cumulative_stats[NIC], 1)
+    riders_data.append(cumulative_stats)
+    header = [NIC, CITY, RIDER_CATEGORY, RIDER_TYPE, TOTAL_PICKED_UP_ORDERS, WEEKEND_ORDERS, HOURS_WORKED, UTR,
+              PICKUP_PAY, DROP_OFF_DISTANCE_PAY, DROP_OFF_DISTANCE, PICKUP_BONUS, PICKUP_DISTANCE, DROP_OFF_PAY,
+              DELIVERY_CHARGES_BASED_PAY_PAY, PER_ORDER_PAY, SLAB_BASED_PAY, LATE_NIGHT_BONUS,
+              NO_SHOW_DAYS, PENALTY, TOTAL_WITHOUT_GUARANTEE, PER_HOUR_INCOME, GUARANTEED_PAY_PER_HOUR, ACCEPTANCE_RATE,
+              ON_TIME_RATE,
+              TOTAL_ON_TIME_PICK_UPS, TOTAL_ON_TIME_DELIVERIES, FAILED_ORDERS, UNACCEPTED_ORDERS, FAILED_RATE,
+              APP_ON_RATE,
+              GUARANTEE_QUALIFIES, GUARANTEE_RATE, FOOD_ORDER_PAY, HEALTH_CARE_ORDER_PAY, ERRAND_ORDER_PAY,
+              BOOKS_ORDER_PAY,
+              BEAUTY_ORDER_PAY, BABY_CARE_ORDER_PAY, PANTRY_ORDER_PAY, PHARMA_ORDER_PAY, TIFFIN_ORDER_PAY,
+              XOOM_ORDER_PAY,
+              TOTAL_PAY_WITH_GUARANTEE, SIGN_UP_BONUS, LAST_SALARY_DIFFERENCE, LOYALTY_BONUS_REDEEMED, REFERRAL_BONUS,
+              CERTIFICATE_BONUS, SECURITY_DEPOSITS_DEDUCTION, FUEL_ALLOWANCE, OVER_TIME_PAY, RIDER_WALLET, FINAL_PAYOUT]
+    file_name = 'Rider Salary Report.csv'
+    zip_file = create_csv(file_name, riders_data, header)
+    attachments = [{'name': file_name + '.zip', 'content': zip_file.getvalue()}]
+    title = 'Rider Salary Report  -  {} - {}'.format(start_date, end_date)
 
 
 

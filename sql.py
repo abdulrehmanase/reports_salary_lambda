@@ -1,5 +1,6 @@
 from utils import *
-
+import pandas as pd
+import pandasql as ps
 
 def get_data(start_date, end_date):
     sql_query = ("""select rider.id  from rider INNER JOIN city c on rider.city_id = c.id where 
@@ -313,3 +314,114 @@ def calculate_on_time_rates(rider, start_time, end_time,total_delivered_orders, 
             "pickup_rate": round(total_on_time_pickups * 100 / (total_picked_up_orders or 1)),
             "on_time_rate": get_on_time_rate(total_on_time_deliveries, total_on_time_pickups, total_delivered_orders,
                                              total_picked_up_orders)}
+
+def loyalty_bonus_query(rider, start_time, end_time):
+    loyalty_bonus_query_sql = ("""SELECT SUM(ROUND((ro.points) * (ro.value_per_point) )) as loyalty_bouns FROM redemption_request rr , redemption_option ro  
+                                    WHERE (rr.rider_id = '{}' AND rr.status = "A" AND rr.updated_at 
+                                    BETWEEN '{}' AND '{}')
+                                    """.format(rider, start_time, end_time))
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(loyalty_bonus_query_sql)
+    get_rider_certificate = cursor.fetchall()
+    return get_rider_certificate[0][0] or 0
+# def get_rider_certificate_earning():
+#     already_paid = False
+#     payment = 0
+#     try:
+#         df = get_rider_certificate_earnings()
+#         previous_paid_stats = df[df['is_paid'] == 1]
+#         if len(previous_paid_stats) > 0:
+#             print("sdf")
+#
+#
+#             payment = previous_paid_stats.iloc[0]['amount_to_pay']
+#             already_paid = True
+#         stats = df[df['is_paid'] == 0]
+#
+#         if len(stats) > 0:
+#             for item in range(len(stats)):
+#                   certificate_instance = stats.iloc[item]['id']
+#                   c=stats.iloc[item]['created_at']
+#                   time_diff = int((datetime.now() - c).total_seconds() / 3600)
+#                   df = df[df['id'] !=certificate_instance ]
+#
+#
+#     except:
+#         pass
+
+
+# def get_rider_certificate_earnings():
+#
+#     get_rider_certificate_earning_sql = ("""select c.id , rc.is_paid,rc.amount_to_pay,c.eligible_after_hours,c.created_at from rider_certificate rc  inner join certification c on rc.certificate_id =c.id
+#                                             WHERE rc.created_at
+#                                             BETWEEN "2021-05-10 00:00:00" AND "2021-10-10 00:00:00" OR rc.paid_at
+#                                             BETWEEN "2021-05-10 00:00:00" AND "2021-10-10 00:00:00" AND rc.rider_id = "6045"
+#                                              """)
+#     connection = connect_to_db()
+#     cursor = connection.cursor()
+#     cursor.execute(get_rider_certificate_earning_sql)
+#     get_rider_certificate = cursor.fetchall()
+#
+#     column_names = ('id', 'is_paid','amount_to_pay', 'eligible_after_hours','created_at')
+#     # results = execute_store_procedure(procedure_name, params, sql=sql)
+#     df = pd.DataFrame(get_rider_certificate, columns=column_names)
+#     # x =df[df['is_paid']==1]
+#     # print(df)
+
+
+    # return df
+# def logistics_instance():
+#     logistics_instance_sql = ("""select lc.enforce_equipment_deposit_date ,lc.enable_equipment_cost_deduction,
+#                                 lc.equipment_cost,lc.security_deposit from logistics_configuration lc """)
+#     connection = connect_to_db()
+#     cursor = connection.cursor()
+#     cursor.execute(logistics_instance_sql)
+#     log_instance = cursor.fetchall()
+#     return log_instance
+
+# def deduct_security_deposit(rider, start_date, end_date, salary):
+#     config = logistics_instance()
+#     enforce_date = config[0][0]
+#     enable_equipment_deduction = bool(config[0][1])
+#     equipment_cost = config[0][2]
+#     security_deposits_cost = config[0][3]
+#     rider_shift = rider_shift_query()
+#     first_shift_date = rider_shift[0][0].date() if rider_shift else None
+#     if not first_shift_date:  # No deduction for riders with no shift
+#         return salary, 0
+#     if enable_equipment_deduction:
+#         equipment_deduction = rider_deposit()
+#         equipment_deduction_date = equipment_deduction[0][0].date() if equipment_deduction else None
+#         equipment_deduction_amount = 0
+#         equipment_deduction_amount = 0
+#         if end_date > enforce_date and salary > equipment_cost:  # check if we are calculating salary after enforce day
+#             if first_shift_date > enforce_date:
+#                 if equipment_deduction_date and start_date <= equipment_deduction_date <= end_date:  # Checks if security deposited deducted in the same date range
+#                     salary -= equipment_cost
+#                     equipment_deduction_amount = equipment_cost
+#                 elif not equipment_deduction_date:  # if no deduction ever happened
+#                     salary -= equipment_cost
+#                     equipment_deduction_amount = equipment_cost
+#                     RiderSecurityDeposit.objects.create(rider=rider, type=RiderSecurityDepositTypes.equipment.value,
+#                                                         amount=equipment_cost)
+
+# def rider_shift_query():
+#     rider_shift_query_sql = ("""SELECT rs.created_at FROM rider_shift rs WHERE  (rs.rider_id = "3308"
+#                             AND rs.started_at IS NOT NULL) ORDER BY rs.id ASC
+#                             LIMIT 1""")
+#     connection = connect_to_db()
+#     cursor = connection.cursor()
+#     cursor.execute(rider_shift_query_sql)
+#     log_instance_data = cursor.fetchall()
+#     return log_instance_data
+#
+# def rider_deposit():
+#     rider_deposit_sql = ("""SELECT rsd.created_at FROM rider_security_deposit rsd WHERE
+#                         rsd.rider_id = "3308" AND rsd.`type` = "e" ORDER BY rsd.id DESC
+#                         limit 1""")
+#     connection = connect_to_db()
+#     cursor = connection.cursor()
+#     cursor.execute(rider_deposit_sql)
+#     log_rider_data = cursor.fetchall()
+#     return log_rider_data
