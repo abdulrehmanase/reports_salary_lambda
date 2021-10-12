@@ -87,7 +87,6 @@ def rider_salary(start_date, end_date):
     cursor.execute(get_data(start_date, end_date))
 
     riders = cursor.fetchall()
-
     for rider in riders:
         rider_id = rider[0]
         pickup_distance = get_rider_pickup_distances(rider=rider[0], start_time=start_date,
@@ -178,11 +177,7 @@ def rider_salary(start_date, end_date):
             certificate_bonus = 0
             loyalty_bonus = loyalty_bonus_query(rider_id, start_date,
                                                                    end_date)
-            print('loyal' , type(loyalty_bonus))
-            print('refferal', type(referral_bonus))
-            print('certi', type(certificate_bonus))
-            print('tota0', type(total_pay_with_guarantee))
-            print('over', type(over_time_pay))
+
             final_payout = max((total_pay_with_guarantee + float(over_time_pay)),
                                0) + loyalty_bonus + referral_bonus + certificate_bonus
             certificate_bonus = 0
@@ -192,13 +187,13 @@ def rider_salary(start_date, end_date):
 
             # rider job type
             rider_type = "Freelance"
-            if rider.job_model == JOB_MODEL_FIXED:
-                if rider.job_type == JOB_TYPE_FULL_TIME:
+            if rider[1] == JOB_MODEL_FIXED:
+                if rider[2] == JOB_TYPE_FULL_TIME:
                     rider_type = "Full-Time"
                 else:
                     rider_type = "Part-Time"
             riders_data.append({
-                NIC: rider.nic, CITY: rider.city.name, RIDER_CATEGORY: rider.get_category_display(),
+                NIC: rider[3], CITY: rider[4], RIDER_CATEGORY: rider[5],
                 RIDER_TYPE: rider_type,
                 TOTAL_PICKED_UP_ORDERS: total_picked_up_orders,
                 WEEKEND_ORDERS: weekend_orders, HOURS_WORKED: hours, UTR: orders_per_hour, PICKUP_PAY: pick_up_pay,
@@ -224,7 +219,7 @@ def rider_salary(start_date, end_date):
                 LOYALTY_BONUS_REDEEMED: loyalty_bonus, REFERRAL_BONUS: referral_bonus,
                 CERTIFICATE_BONUS: certificate_bonus,
                 SECURITY_DEPOSITS_DEDUCTION: security_deposit_deduction, FUEL_ALLOWANCE: fuel_allowance,
-                OVER_TIME_PAY: over_time_pay, RIDER_WALLET: rider.cash_in_hand_without_fuel_amount,
+                OVER_TIME_PAY: over_time_pay, RIDER_WALLET: rider[6],
                 FINAL_PAYOUT: final_payout})
     cumulative_stats = {
         NIC: len(riders_data), CITY: '', RIDER_CATEGORY: '', RIDER_TYPE: '',
