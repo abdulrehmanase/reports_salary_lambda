@@ -64,7 +64,7 @@ RIDER_WALLET = "Rider Wallet"
 JOB_MODEL_FIXED = 2
 JOB_TYPE_FULL_TIME = 1
 PER_ORDER_PAY = 'FP'
-DELIVERY_CHARGES_BASED_PAY_PAY =  'DCP'
+DELIVERY_CHARGES_BASED_PAY_PAY = 'DCP'
 SLAB_BASED_PAY = 'SBP'
 LATE_NIGHT_BONUS = 'LNB'
 
@@ -154,13 +154,13 @@ def rider_salary(start_date, end_date):
             orders_per_hour = round(total_delivered_orders / hours, 1)
             per_hour_income = round(Decimal(total_pay) / hours, 1)
             guaranteed_pay_per_hour = round(guaranteed_pay / hours, 2)
-            weekend_orders_stats=get_rider_order_dates_stats(rider_id,weekendss)
+            weekend_orders_stats = get_rider_order_dates_stats(rider_id,weekendss)
             weekend_orders = weekend_orders_stats['total_picked_up_orders']
-            order_accept_stats=get_rider_order_accept_stats(rider=rider[0], start_time=start_date,
+            order_accept_stats = get_rider_order_accept_stats(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
             acceptance_rate = order_accept_stats['acceptance_rate']
             total_unaccepted_orders = order_accept_stats['total_rejected_orders']
-            total_on_time_deliveries=get_rider_on_time_delivery_stats(rider=rider[0], start_time=start_date,
+            total_on_time_deliveries = get_rider_on_time_delivery_stats(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
             total_on_time_deliveriess = total_on_time_deliveries['total_on_time_deliveries']
             total_on_time_pickups = get_rider_on_time_pickup_stats(rider=rider[0], start_time=start_date,
@@ -204,7 +204,7 @@ def rider_salary(start_date, end_date):
                 NO_SHOW_DAYS: no_show_days, PENALTY: total_penalty, TOTAL_WITHOUT_GUARANTEE: total_pay,
                 PER_HOUR_INCOME: per_hour_income,
                 GUARANTEED_PAY_PER_HOUR: guaranteed_pay_per_hour, ACCEPTANCE_RATE: acceptance_rate,
-                ON_TIME_RATE: on_time_rate, TOTAL_ON_TIME_PICK_UPS: total_on_time_pickupss,
+                ON_TIME_RATE: on_time_rates, TOTAL_ON_TIME_PICK_UPS: total_on_time_pickupss,
                 TOTAL_ON_TIME_DELIVERIES: total_on_time_deliveriess, FAILED_ORDERS: total_failed_orders,
                 UNACCEPTED_ORDERS: total_unaccepted_orders, FAILED_RATE: failed_rate,
                 APP_ON_RATE: app_on_rate, GUARANTEE_QUALIFIES: guarantee_qualifies, GUARANTEE_RATE: guarantee_rate,
@@ -289,6 +289,7 @@ def rider_salary(start_date, end_date):
     zip_file = create_csv(file_name, riders_data, header)
     attachments = [{'name': file_name + '.zip', 'content': zip_file.getvalue()}]
     title = 'Rider Salary Report  -  {} - {}'.format(start_date, end_date)
+    print(zip_file)
 
 
 
