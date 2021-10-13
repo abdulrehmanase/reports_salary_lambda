@@ -151,8 +151,11 @@ def rider_salary(start_date, end_date):
             total_on_time_deliveries = total_on_time_pickups = total_unaccepted_orders = 0
         guarantee_qualifies = 'No'
         total_pay_with_guarantee = total_pay
-        cash = cash_in_hand_without_fuel_amounts()
+        cash = cash_in_hand_without_fuel_amounts(rider_id)
+        print('cash', cash)
         cash_in_hand_without_fuel_amount = rider[6] - cash
+        print('rider[6]' , rider[6])
+        print('cash in hand' , cash_in_hand_without_fuel_amount)
         catogery = rider[5]
 
         if hours:
@@ -301,7 +304,6 @@ def rider_salary(start_date, end_date):
     zip_file = create_csv(file_name, riders_data, header)
     attachments = [{'name': file_name + '.zip', 'content': zip_file.getvalue()}]
     title = 'Rider Salary Report  -  {} - {}'.format(start_date, end_date)
-
 
 
 

@@ -328,31 +328,31 @@ def loyalty_bonus_query(rider, start_time, end_time):
     return get_rider_certificate[0][0] or 0
 
 
-def cash_in_hand_without_fuel_amounts():
+def cash_in_hand_without_fuel_amounts(rider):
 
-    fuel_amount, order_ids = get_rider_non_paid_fuel_earnings()
+    fuel_amount, order_ids = get_rider_non_paid_fuel_earnings(rider)
     return fuel_amount
 
 
 
-def get_rider_non_paid_fuel_earnings():
+def get_rider_non_paid_fuel_earnings(rider):
     pb_ddp_earning = ("""SELECT SUM(re.amount) as pick_up_and_drop_off_as_fuel_pay FROM rider_earnings re 
                         WHERE ((re.log_type = "PB" OR re.log_type = "DDP") AND 
-                        re.is_fuel_paid = False AND re.rider_id = "3308")""")
+                        re.is_fuel_paid = False AND re.rider_id = '{}') """.format(rider))
     connection = connect_to_db()
     cursor = connection.cursor()
     cursor.execute(pb_ddp_earning)
     get_earning = cursor.fetchall()
     fuel_amount = get_earning[0][0] or 0
-    order_ids = order_ids_query()
+    order_ids = order_ids_query(rider)
     res_order_ids = []
     [res_order_ids.append(x) for x in order_ids if x not in res_order_ids]
     return fuel_amount, res_order_ids
 
-def order_ids_query():
+def order_ids_query(rider):
     order_ids_sql = ("""SELECT re.order_id FROM rider_earnings re 
                         WHERE ((re.log_type = "PB" OR re.log_type = "DDP") 
-                        AND re.is_fuel_paid = False AND re.rider_id = "3308")""")
+                        AND re.is_fuel_paid = False AND re.rider_id = '{}')""".format(rider))
     connection = connect_to_db()
     cursor = connection.cursor()
     cursor.execute(order_ids_sql)
