@@ -6,7 +6,7 @@ import pandasql as ps
 def get_data(start_date, end_date):
     sql_query = ("""select rider.id , rider.job_model , rider.job_type , rider.nic , c.name ,rider.category,rider.cash_in_hand from rider INNER JOIN city c on rider.city_id = c.id where 
                     (rider.city_id is not NULL AND rider.id IN (SELECT rs.rider_id from rider_shift rs 
-                    inner join shift s on rs.shift_id = s.id where s.start_at  BETWEEN  '{}' AND '{}' ) ) limit 1  """.format(start_date,end_date))
+                    inner join shift s on rs.shift_id = s.id where s.start_at  BETWEEN  '{}' AND '{}' ) ) limit 5  """.format(start_date,end_date))
     return sql_query
 
 

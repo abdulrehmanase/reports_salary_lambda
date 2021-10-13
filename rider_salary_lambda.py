@@ -4,6 +4,7 @@ from utils import *
 from sql import *
 from decimal import Decimal
 from datetime import timedelta
+
 import pandas as pd
 import json
 from django.core.serializers.json import DjangoJSONEncoder
@@ -90,10 +91,12 @@ def rider_salary(start_date, end_date):
     riders = cursor.fetchall()
     for rider in riders:
         rider_id = rider[0]
-        pickup_distance = get_rider_pickup_distances(rider=rider[0], start_time=start_date,
+        pickup_distances = get_rider_pickup_distances(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date, log_type="PB")
-        delivered_distance = get_rider_drop_off_distances(rider=rider[0], start_time=start_date,
+        pickup_distance = float(pickup_distances)
+        delivered_distances = get_rider_drop_off_distances(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date, log_type="DDP")
+        delivered_distance = float(delivered_distances)
         rider_earning = get_rider_earnings(rider=rider[0], start_time=start_date,
                                                                    end_time=end_date)
         pick_up_distance_bonus = rider_earning[0][0] or 0
@@ -136,11 +139,13 @@ def rider_salary(start_date, end_date):
                                                                    end_time=end_date , total_pay=total_pay)
 
         shifts_stats = stats["shifts_stats"]
-        hours = shifts_stats['hours']
-        app_on_rate = shifts_stats['hours_percent']
-        guaranteed_pay = shifts_stats['total_pay']
+        hours = float(shifts_stats['hours'])
+
+        app_on_rate = float(shifts_stats['hours_percent'])
+        guaranteed_pay = float(shifts_stats['total_pay'])
         print('guaranteed_pay',type(guaranteed_pay))
         over_time_pay = shifts_stats['over_time_pay'] or 0
+
         total_picked_up_orders = orders_per_hour = acceptance_rate = per_hour_income = guaranteed_pay_per_hour = \
             total_failed_orders = failed_rate = guarantee_rate = weekend_orders = on_time_rate = \
             total_on_time_deliveries = total_on_time_pickups = total_unaccepted_orders = 0
@@ -156,8 +161,9 @@ def rider_salary(start_date, end_date):
             total_delivered_orders = order_stats['total_delivered_orders']
             total_failed_orders = order_stats['total_failed_orders']
             failed_rate = order_stats['failed_rate']
-            orders_per_hour = round(total_delivered_orders / hours, 1)
-            per_hour_income = round(Decimal(total_pay) / hours, 1)
+            orders_per_hour = float(round(total_delivered_orders / hours, 1))
+
+            per_hour_income = round(float(total_pay) / hours, 1)
             guaranteed_pay_per_hour = round(guaranteed_pay / hours, 2)
             weekend_orders_stats = get_rider_order_dates_stats(rider_id,weekendss)
             weekend_orders = weekend_orders_stats['total_picked_up_orders']
@@ -173,7 +179,7 @@ def rider_salary(start_date, end_date):
             total_on_time_pickupss = total_on_time_pickups['total_on_time_pickups']
             if can_get_minimum_guarantee:
                 guarantee_qualifies = 'Yes'
-                guarantee_rate = guaranteed_pay_per_hour
+                guarantee_rate = float(guaranteed_pay_per_hour)
 
                 total_pay_with_guarantee = float(guaranteed_pay) - total_penalty
             on_time_rate = calculate_on_time_rates(rider_id, start_date,
@@ -276,6 +282,7 @@ def rider_salary(start_date, end_date):
         FINAL_PAYOUT: sum(rider_data[FINAL_PAYOUT] for rider_data in riders_data),
     }
     cumulative_stats[UTR] = round(sum(rider_data[UTR] for rider_data in riders_data) / cumulative_stats[NIC], 1)
+
     riders_data.append(cumulative_stats)
     header = [NIC, CITY, RIDER_CATEGORY, RIDER_TYPE, TOTAL_PICKED_UP_ORDERS, WEEKEND_ORDERS, HOURS_WORKED, UTR,
               PICKUP_PAY, DROP_OFF_DISTANCE_PAY, DROP_OFF_DISTANCE, PICKUP_BONUS, PICKUP_DISTANCE, DROP_OFF_PAY,
@@ -294,11 +301,6 @@ def rider_salary(start_date, end_date):
     zip_file = create_csv(file_name, riders_data, header)
     attachments = [{'name': file_name + '.zip', 'content': zip_file.getvalue()}]
     title = 'Rider Salary Report  -  {} - {}'.format(start_date, end_date)
-    print(zip_file)
-
-
-
-
 
 
 

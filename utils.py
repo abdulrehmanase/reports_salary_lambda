@@ -21,7 +21,7 @@ def zip_content(file_name, content):
     return zipped_file
 
 
-def connect_to_db(env='local'):
+def connect_to_db(env='staging'):
     if env == "local":
         endpoint = 'localhost'
         username = 'mani'
