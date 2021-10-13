@@ -61,6 +61,21 @@ def get_dates(start_date, end_date):
         result = {'start_time': start_time, 'end_time': end_time , 'start_date' : start_date , 'end_date' : end_date}
         return result
 
+
 def convert_list_tuple(weekends):
     for day in weekends:
-       print(str(day))
+        print(str(day))
+
+
+RIDER_CATEGORIES = {
+    1: "Food",
+    2: "CMART",
+    3: "MILK",
+    4: "3PL General",
+    5: "3PL Restaurant",
+    6: "3PL Errand"
+}
+
+
+def get_rider_category(cat_id):
+    return RIDER_CATEGORIES[cat_id]

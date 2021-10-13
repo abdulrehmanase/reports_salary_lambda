@@ -2,6 +2,7 @@ from utils import *
 import pandas as pd
 import pandasql as ps
 
+
 def get_data(start_date, end_date):
     sql_query = ("""select rider.id , rider.job_model , rider.job_type , rider.nic , c.name ,rider.category,rider.cash_in_hand from rider INNER JOIN city c on rider.city_id = c.id where 
                     (rider.city_id is not NULL AND rider.id IN (SELECT rs.rider_id from rider_shift rs 
@@ -325,6 +326,40 @@ def loyalty_bonus_query(rider, start_time, end_time):
     cursor.execute(loyalty_bonus_query_sql)
     get_rider_certificate = cursor.fetchall()
     return get_rider_certificate[0][0] or 0
+
+
+def cash_in_hand_without_fuel_amounts():
+
+    fuel_amount, order_ids = get_rider_non_paid_fuel_earnings()
+    return fuel_amount
+
+
+
+def get_rider_non_paid_fuel_earnings():
+    pb_ddp_earning = ("""SELECT SUM(re.amount) as pick_up_and_drop_off_as_fuel_pay FROM rider_earnings re 
+                        WHERE ((re.log_type = "PB" OR re.log_type = "DDP") AND 
+                        re.is_fuel_paid = False AND re.rider_id = "3308")""")
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(pb_ddp_earning)
+    get_earning = cursor.fetchall()
+    fuel_amount = get_earning[0][0] or 0
+    order_ids = order_ids_query()
+    res_order_ids = []
+    [res_order_ids.append(x) for x in order_ids if x not in res_order_ids]
+    return fuel_amount, res_order_ids
+
+def order_ids_query():
+    order_ids_sql = ("""SELECT re.order_id FROM rider_earnings re 
+                        WHERE ((re.log_type = "PB" OR re.log_type = "DDP") 
+                        AND re.is_fuel_paid = False AND re.rider_id = "3308")""")
+    connection = connect_to_db()
+    cursor = connection.cursor()
+    cursor.execute(order_ids_sql)
+    order_id = cursor.fetchall()
+    return order_id
+
+
 # def get_rider_certificate_earning():
 #     already_paid = False
 #     payment = 0
