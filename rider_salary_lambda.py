@@ -303,7 +303,7 @@ def rider_salary(start_date, end_date):
     zip_file = create_csv(file_name, riders_data, header)
     attachments = [{'name': file_name + '.zip', 'content': zip_file.getvalue()}]
     title = 'Rider Salary Report  -  {} - {}'.format(start_date, end_date)
-   
+
 
 
 rider_salary("2021-5-10", "2021-10-10")
